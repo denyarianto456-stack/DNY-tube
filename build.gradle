@@ -1,0 +1,15 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.dnytube.app'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.dnytube.app'
+        minSdk 23
+        targetSdk 35
+        versionCode 4
+        versionName '1.0.0'
+    }
+}
+
+dependencies { }
