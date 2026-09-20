@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>DNYTUBE</title>
+<style>
+:root{--bg:#0a0a0a;--panel:#161616;--card:#1e1e1e;--blue:#2196f3;--red:#f44336;--orange:#ff5722;--green:#4caf50;--text:#e0e0e0;--muted:#777;--border:#333}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;padding:10px;background:var(--bg);color:var(--text);font:14px Roboto,Arial,sans-serif;user-select:none}
+.header-nav{display:flex;gap:6px;background:#000;padding:5px;border-radius:30px;margin-bottom:15px;border:1px solid var(--border);position:sticky;top:0;z-index:10}
+.tab-btn{flex:1;padding:10px 5px;text-align:center;font-size:11px;font-weight:bold;border-radius:25px;color:var(--muted)}
+.tab-btn.active{background:var(--orange);color:#fff;box-shadow:0 0 15px rgba(255,87,34,.4)}
+.view{display:none}.view.active{display:block}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:15px;margin-bottom:15px}
+.title{font-size:12px;font-weight:bold;color:var(--muted);text-transform:uppercase;margin-bottom:12px;display:flex;justify-content:space-between}
+.scroll{display:flex;overflow-x:auto;gap:12px;padding:10px 5px}
+.fader{min-width:50px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.val{font:10px monospace;color:var(--blue);background:#111;padding:2px 4px;border-radius:3px;min-width:35px;text-align:center}
+input[type=range]{accent-color:var(--orange)}
+.vert{width:140px;transform:rotate(-90deg);margin:70px 0}
+.label{font-size:9px;color:var(--muted);font-weight:bold}
+.row{display:flex;gap:10px}.btn{flex:1;padding:11px;background:#222;border:1px solid #444;color:#fff;border-radius:7px;font-size:10px;font-weight:bold}
+.save{border-color:var(--green);color:var(--green)}.load{border-color:var(--blue);color:var(--blue)}
+.band{display:flex;gap:4px;margin-bottom:15px}.band button{flex:1;padding:8px;background:#222;border:1px solid #333;color:var(--muted);border-radius:4px;font-size:9px}.band .active{background:var(--green);color:#fff;border-color:var(--green)}
+.ch{border-left:4px solid var(--blue);padding-left:10px;margin-bottom:20px}.ch.r{border-color:var(--red)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.box{background:#111;padding:10px;border-radius:8px;border:1px solid #222}.box label{display:block;font-size:8px;color:var(--muted);margin-bottom:5px}.box select,.box input{width:100%;background:#222;color:#fff;border:1px solid #444}
+canvas{width:100%;height:160px;background:#000;border-radius:8px;border:1px solid #222}
+.status{font-size:9px;color:var(--muted);text-align:center;margin:8px}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="title">DNYTUBE PLAYER <span style="color:var(--green)">NO ACTIVATION</span></div>
+<div class="row">
+<button class="btn" onclick="Android.chooseLocalFile()">OPEN AUDIO</button>
+<button class="btn" onclick="Android.pauseLocal()">PAUSE</button>
+<button class="btn" onclick="Android.stopLocal()">STOP</button>
+</div>
+<div class="status">Local audio foundation • native MediaPlayer</div>
+</div>
+<div class="header-nav"><div class="tab-btn active" onclick="tab(0)">31-BAND EQ</div>
+<div class="tab-btn" onclick="tab(1)">COMPRESSOR</div>
+<div class="tab-btn" onclick="tab(2)">BPF (X-OVER)</div><div class="tab-btn" onclick="tab(3)">PLAYER</div>
+</div>
+
+<section id="v0" class="view active">
+<div class="card"><div class="title">Graphic Equalizer <span id="chlabel" style="color:var(--orange)">CH A</span></div><div id="eq" class="scroll"></div></div>
+<div class="row"><button class="btn save" onclick="Android.showSavePresetDialog()">SAVE PRESET</button><button class="btn load" onclick="Android.showLoadPresetDialog()">LOAD PRESET</button><button class="btn" onclick="downloadPreset()">EXPORT JSON</button></div>
+</section>
+
+<section id="v1" class="view">
+<div class="card"><div class="title">Multiband Dynamics</div><div class="band">
+<button class="active" onclick="mb(0)">SUB</button><button onclick="mb(1)">LOW</button><button onclick="mb(2)">MID</button><button onclick="mb(3)">HIGH</button>
+</div><div id="comp" class="scroll"></div></div>
+</section>
+
+<section id="v2" class="view">
+<div class="card"><div class="title">Master Crossover Monitor</div><canvas id="graph"></canvas>
+<div class="ch"><div class="title" style="color:var(--blue)">CHANNEL A (LEFT)</div><div class="row"><button class="btn" onclick="mute('a',this)">MUTE</button><button class="btn" onclick="phase('a',this)">INV PHASE</button></div><div id="ga" class="grid"></div></div>
+<div class="ch r"><div class="title" style="color:var(--red)">CHANNEL B (RIGHT)</div><div class="row"><button class="btn" onclick="mute('b',this)">MUTE</button><button class="btn" onclick="phase('b',this)">INV PHASE</button></div><div id="gb" class="grid"></div></div>
+</div>
+</section>
+<section id="v3" class="view"><div class="card"><div class="title">DNYTUBE PLAYER</div><div class="row"><button class="btn save" onclick="Android.chooseLocalFile()">OPEN AUDIO</button><button class="btn" onclick="Android.openYouTube()">YOUTUBE</button></div><div class="row" style="margin-top:10px"><button class="btn" onclick="Android.pauseLocal()">PAUSE</button><button class="btn" onclick="Android.resumeLocal()">PLAY</button><button class="btn" onclick="Android.stopLocal()">STOP</button></div><input id="seek" type="range" min="0" max="1000" value="0" style="width:100%;margin-top:15px" oninput="seek(this.value)"><div class="grid" style="margin-top:10px"><div class="box"><label>SUB-BASS</label><input type="range" min="0" max="100" value="0" oninput="Android.setBass(this.value)"></div><div class="box"><label>STEREO WIDTH</label><input type="range" min="0" max="100" value="0" oninput="Android.setStereo(this.value)"></div></div></div><div class="card"><div class="title">PRESETS</div><div class="row"><button class="btn save" onclick="Android.savePreset()">EXPORT PRESET</button><button class="btn load" onclick="Android.loadPreset()">IMPORT PRESET</button></div></div></section>
+<div class="status">DNYTUBE • activation system disabled</div>
+
+<script>
+const freqs=[20,25,31.5,40,50,63,80,100,125,160,200,250,315,400,500,630,800,'1k','1.25k','1.6k','2k','2.5k','3.1k','4k','5k','6.3k','8k','10k','12.5k','16k','20k'];
+let channel=0,mbBand=0;
+const st={a:{hpf:40,lpf:20000,ht:'LR48',lt:'LR48',mute:0,phase:0},b:{hpf:40,lpf:20000,ht:'LR48',lt:'LR48',mute:0,phase:0}};
+function downloadPreset(){
+  const data = Android.presetJson ? Android.presetJson() : JSON.stringify({app:"DNYTUBE"});
+  const blob = new Blob([data], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "dnytube-preset.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function tab(i){document.querySelectorAll('.tab-btn').forEach((x,j)=>x.classList.toggle('active',j==i));document.querySelectorAll('.view').forEach((x,j)=>x.classList.toggle('active',j==i));if(i==2)draw()}
+function seek(v){let d=Android.duration();if(d)Android.seekTo(Math.floor(d*(+v/1000)))}
+function playerState(on){document.querySelector('.status').textContent=on?'DNYTUBE • PLAYING':'DNYTUBE • READY'}
+function nativePlayerTick(pos,dur,playing){const s=document.getElementById('seek');if(s&&dur>0&&document.activeElement!==s)s.value=Math.round(pos*1000/dur);}
+function onPresetLoaded(){location.reload()}
+function buildEq(){eq.innerHTML='';freqs.forEach((f,i)=>{let d=document.createElement('div');d.className='fader';d.innerHTML=`<span class=val id=e${i}>0.0</span><input class=vert type=range min=-1500 max=1500 value=0 oninput="eqc(${i},this.value)"><span class=label>${f}</span>`;eq.appendChild(d)})}
+function eqc(i,v){document.getElementById('e'+i).textContent=(v/100).toFixed(1);if(window.Android)Android.updateEq(channel?'chB':'chA',i,+v)}
+function mb(i){mbBand=i;document.querySelectorAll('.band button').forEach((b,j)=>b.classList.toggle('active',j==i));buildComp()}
+function buildComp(){let p=[['Thresh',-60,0,-18,'dB'],['Ratio',1,20,2.5,':1'],['Knee',0,24,6,'dB'],['Attack',.1,500,20,'ms'],['Release',10,3000,150,'ms'],['Gain',-12,12,0,'dB']];comp.innerHTML='';p.forEach(x=>{let d=document.createElement('div');d.className='fader';d.innerHTML=`<span class=val>${x[3].toFixed(1)}${x[4]}</span><input class=vert type=range min=${x[1]*10} max=${x[2]*10} value=${x[3]*10} oninput="cp(this,'${x[0]}')"><span class=label>${x[0]}</span>`;comp.appendChild(d)})}
+function cp(el,k){let v=+el.value/10;el.previousElementSibling.textContent=v.toFixed(1);if(window.Android)Android.updateParam((channel?'chB':'chA')+'_band'+mbBand+'_'+k,v)}
+function controls(id,ch){document.getElementById(id).innerHTML=`
+<div class=box><label>HPF TYPE</label><select onchange="sp('${ch}','h','this.value')"><option>BW12</option><option>BW24</option><option>LR24</option><option selected>LR48</option></select></div>
+<div class=box><label>LPF TYPE</label><select onchange="sp('${ch}','l',this.value)"><option>BW12</option><option>BW24</option><option>LR24</option><option selected>LR48</option></select></div>
+<div class=box><label>GAIN</label><input type=range min=-24 max=12 value=0 oninput="pv('${ch}_gain',this.value)"></div>
+<div class=box><label>LIMIT</label><input type=range min=-40 max=0 value=-2 oninput="pv('${ch}_limit_db',this.value)"></div>
+<div class=box><label>HPF FREQ</label><input type=range min=20 max=1000 value=40 oninput="pf('${ch}','hpf',this.value)"></div>
+<div class=box><label>LPF FREQ</label><input type=range min=100 max=20000 value=20000 oninput="pf('${ch}','lpf',this.value)"></div>`}
+function sp(ch,k,v){st[ch][k=='h'?'ht':'lt']=v;if(window.Android)Android.updateStringParam(ch+'_'+(k=='h'?'hpf':'lpf')+'_type',v);draw()}
+function pv(k,v){if(window.Android)Android.updateParam(k,+v)}
+function pf(ch,k,v){st[ch][k]=+v;if(window.Android)Android.updateParam(ch+'_'+k+'_freq_f',+v);draw()}
+function mute(ch,b){st[ch].mute^=1;b.classList.toggle('active');if(window.Android)Android.updateParam(ch+'_muted',st[ch].mute)}
+function phase(ch,b){st[ch].phase^=1;b.classList.toggle('active');if(window.Android)Android.updateParam(ch+'_phase_inv',st[ch].phase)}
+function draw(){let c=graph,x=c.getContext('2d'),w=c.width=c.clientWidth*2,h=c.height=c.clientHeight*2;x.fillStyle='#0a0a0a';x.fillRect(0,0,w,h);x.strokeStyle='#222';for(let i=1;i<12;i++){x.beginPath();x.moveTo(w*i/12,0);x.lineTo(w*i/12,h);x.stroke()}[['a','#2196f3'],['b','#f44336']].forEach(([ch,col])=>{let s=st[ch];x.beginPath();x.strokeStyle=col;x.lineWidth=4;for(let i=0;i<=w;i+=3){let f=20*Math.pow(1000,i/w);let r=0;if(f<s.hpf)r=-48*Math.log2(s.hpf/f);else if(f>s.lpf)r=-48*Math.log2(f/s.lpf);let y=h*.2+Math.abs(r)*h*.01;i?x.lineTo(i,y):x.moveTo(i,y)}x.stroke()})}
+buildEq();buildComp();controls('ga','a');controls('gb','b');setTimeout(draw,300);window.onresize=draw;
+</script>
+</body>
+</html>
